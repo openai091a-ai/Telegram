@@ -1,0 +1,69 @@
+name: Build Midlegram App
+on: [push]
+
+jobs:
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Nativefier
+        run: npm install -g nativefier
+
+      - name: Create Windows App
+        run: |
+          nativefier "https://mymessenger-mri2.onrender.com" `
+          --name "Midlegram" `
+          --platform "windows" `
+          --arch "x64" `
+          --icon "icon.png" `
+          --single-instance `
+          --internal-urls ".*" `
+          --honest `
+          --maximize
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Midlegram-Windows-Desktop
+          path: ./*win32-x64/
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Android Project
+        run: |
+          cordova create midlegram_app com.aura.midlegram "Midlegram"
+          cd midlegram_app
+          cordova platform add android
+          mkdir -p res/icon/android
+          cp ../icon.png res/icon/android/icon.png
+          echo '<?xml version="1.0" encoding="UTF-8"?><widget id="com.aura.midlegram" version="1.0.0" xmlns="http://www.w3.org/ns/widgets"><name>Midlegram</name><description>Midlegram Messenger</description><author>Midlegram Team</author><content src="https://mymessenger-mri2.onrender.com" /><icon src="res/icon/android/icon.png" /><access origin="*" /><allow-intent href="http://*/*" /><allow-intent href="https://*/*" /></widget>' > config.xml
+          cordova build android --label="Midlegram"
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Midlegram-Android-Mobile
+          path: midlegram_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+
